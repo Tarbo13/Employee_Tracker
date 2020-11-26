@@ -2,6 +2,8 @@ let mysql = require("mysql");
 let inquirer = require("inquirer");
 let table = require("easy-table");
 require("console.table")
+let employees;
+let roles;
 
 let connection = mysql.createConnection({
   host: "localhost",
@@ -20,6 +22,9 @@ let connection = mysql.createConnection({
 connection.connect(function(err) {
   if (err) throw err;
   start();
+  getEmployees();
+  getRoles();
+
 });
 
 function start(){
@@ -34,8 +39,7 @@ function start(){
             "Add an employee",
             "View all employees",
             "View a department",
-            "View a role",
-            "View an employee",
+            "View a role",            
             "Update employee roles",
             "Exit"
         ]
@@ -61,7 +65,11 @@ function start(){
                 departmentView();
                 break;
 
-            case "update employee roles":
+            case "View a role":
+                viewRoles();
+                break;
+
+            case "Update employee roles":
                 employeeUpdate();
                 break;
             
@@ -178,6 +186,8 @@ function departmentView() {
         if (err) throw err;
 
         console.table(res);
+
+        start();
     });
 
     // inquirer
@@ -199,21 +209,93 @@ function departmentView() {
     //         connection.query("")
     //     })
 
-    start();
+    
 }
 
-function viewEmployees() {
-    
-    let query = "SELECT employee.employee_id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager FROM employee LEFT JOIN role on employee.role_id = role.role_id LEFT JOIN department on role.department_id = department.department_id LEFT JOIN employee manager on manager.manager_id = employee.manager_id;";
-
-    connection.query(query, function(err, res) {
+function viewEmployees () {
+    connection.query('SELECT e.id, e.first_name, e.last_name, d.name AS department, r.title, r.salary, CONCAT_WS(" ", m.first_name, m.last_name) AS manager FROM employee e LEFT JOIN employee m ON m.id = e.manager_id INNER JOIN role r ON e.role_id = r.id INNER JOIN department d ON r.department_id = d.id ORDER BY e.id ASC', function (err, res) {
         if (err) throw err;
 
         console.table(res);
 
         start();
+
+    });
+}
+
+function getRoles() {
+    connection.query("SELECT id, title FROM role", function(err,res) {
+        if (err) throw err;
+        roles = res;
     })
 }
+
+function getEmployees() {
+    connection.query("SELECT id, CONCAT_WS(' ', first_name, last_name) AS Employee_Name FROM employee", function(err, res) {
+        if (err) throw err;
+        employees = res;
+    });
+}
+
+employeeUpdate = () => {
+    let employeeOptions = [];
+  
+    for (var i = 0; i < employees.length; i++) {
+      employeeOptions.push(Object(employees[i]));
+    }
+    inquirer.prompt([
+      {
+        name: "updateRole",
+        type: "list",
+        message: "Which employee's role do you want to update?",
+        choices: function () {
+          var choiceArray = [];
+          for (var i = 0; i < employeeOptions.length; i++) {
+            choiceArray.push(employeeOptions[i].Employee_Name);
+          }
+          return choiceArray;
+        }
+      }
+    ]).then(answer => {
+      let roleOptions = [];
+      for (i = 0; i < roles.length; i++) {
+        roleOptions.push(Object(roles[i]));
+      };
+      for (i = 0; i < employeeOptions.length; i++) {
+        if (employeeOptions[i].Employee_Name === answer.updateRole) {
+          employeeSelected = employeeOptions[i].id
+        }
+      }
+      inquirer.prompt([
+        {
+          name: "newRole",
+          type: "list",
+          message: "Select a new role:",
+          choices: function() {
+            var choiceArray = [];
+            for (var i = 0; i < roleOptions.length; i++) {
+              choiceArray.push(roleOptions[i].title)
+            }
+            return choiceArray;
+          }
+        }
+      ]).then(answer => {
+  for (i = 0; i < roleOptions.length; i++) {
+    if (answer.newRole === roleOptions[i].title) {
+      newChoice = roleOptions[i].id
+      connection.query(`UPDATE employee SET role_id = ${newChoice} WHERE id = ${employeeSelected}`), (err, res) => {
+        if (err) throw err;
+      };
+    }
+  }
+  console.log("Role updated succesfully");
+  getEmployees();
+  getRoles();
+  start();
+      })
+    })
+  };
+
 
 
 
