@@ -12,11 +12,11 @@ This application requires the following to be installed:  a `package.json` file,
 ## Usage
 Below is a short GIF demonstrating how this application works.  I've also included a link the the deployed web page below.
 
-<img src = "README Generator GIF.gif" />
+<img src = "demo.gif" />
 
 <br>
 
-[Link to Video](https://drive.google.com/file/d/1YSvj5Nbm9iNqXlTfIEqUvyxDtzyH3yhD/view)
+[Link to Video](https://drive.google.com/file/d/1B0LaqNcqhJcXtpV50ndFodtgTpVFz2Of/view)
 
 ## Contributors
 Ben Robinson
