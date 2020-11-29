@@ -1,7 +1,9 @@
 let mysql = require("mysql");
 let inquirer = require("inquirer");
 let table = require("easy-table");
-require("console.table")
+require("console.table");
+let { printTable } = require("console-table-printer");
+let figlet = require("figlet");
 let employees;
 let roles;
 
@@ -24,10 +26,23 @@ connection.connect(function(err) {
   start();
   getEmployees();
   getRoles();
+  heading();
 
 });
 
+function heading() {
+    figlet("Employee Tracker", function(err,data) {
+        if (err) {
+            console.log("something went wrong");
+            console.dir(err);
+            return;
+        }
+        console.log(data);
+    })
+}
+
 function start(){
+   
     inquirer
     .prompt({
         name: "action",
@@ -102,8 +117,8 @@ function departmentAdd() {
         connection.query(query, {name: answer.department}, function (err, res) {
             if (err) throw err;
         });
-            console.table(answer);
             console.log("role inserted");
+            console.table(answer);           
 
         start();
     });
@@ -139,9 +154,9 @@ function roleAdd() {
         }, function(err) {
             if (err) throw err;
         
-       
+            console.log("Role added")
             console.table(answer);
-            console.log(answer.role, answer.salary)
+            
 
             start();
         });
@@ -161,6 +176,11 @@ function employeeAdd() {
                 type: "input",
                 message: "what is the employee's last name"
             },
+            {
+                name: "roleId",
+                type: "input",
+                message: "what is the employee's role id#?"
+            }
                        
         ]).then(function(answer){
 
@@ -169,10 +189,12 @@ function employeeAdd() {
             connection.query(query,{
                 first_name: answer.firstName,
                 last_name: answer.lastName,
-                
+                role_id: answer.roleId,
+
             }, function(err){
                 if (err) throw err;
                 
+                console.log("Employee added")
                 console.table(answer);
                 start();
 
@@ -185,29 +207,13 @@ function departmentView() {
     connection.query("SELECT * FROM department", function(err, res, fields) {
         if (err) throw err;
 
-        console.table(res);
-
+        figlet("Departments", function(err, result) {
+            if (err) throw err;
+            console.log(err || result)
+        })
+        printTable(res);
         start();
     });
-
-    // inquirer
-    //     .prompt([
-    //         {
-    //             name: "department",
-    //             type: "list",
-    //             message: "which department would you like to view?",
-    //             choices: [
-    //                 "Warehouseing",
-    //                 "Domestic Trans",
-    //                 "International Trans",
-    //                 "Sales"
-    //             ]
-    //         }
-    //     ]).then(function(answer){
-
-    //         if (err) throw err;
-    //         connection.query("")
-    //     })
 
     
 }
@@ -215,8 +221,11 @@ function departmentView() {
 function viewEmployees () {
     connection.query('SELECT e.id, e.first_name, e.last_name, d.name AS department, r.title, r.salary, CONCAT_WS(" ", m.first_name, m.last_name) AS manager FROM employee e LEFT JOIN employee m ON m.id = e.manager_id INNER JOIN role r ON e.role_id = r.id INNER JOIN department d ON r.department_id = d.id ORDER BY e.id ASC', function (err, res) {
         if (err) throw err;
+        figlet("All Employees", function(err,result) {
+            console.log(err, result);
+        });
 
-        console.table(res);
+        printTable(res);
 
         start();
 
@@ -295,6 +304,18 @@ employeeUpdate = () => {
       })
     })
   };
+
+  function viewRoles() {
+      connection.query("SELECT r.id, r.title, r.salary, d.name AS Department_Name FROM role AS r INNER JOIN department AS d ON r.department_id = d.id", function(err, res) {
+          if (err) throw err;
+          figlet("Roles", function(err,result) {
+              console.log(err || result);
+          });
+
+          printTable(res);
+          start();
+      })
+  }
 
 
 
